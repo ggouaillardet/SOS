@@ -1,11 +1,9 @@
 sudo: required
 dist: trusty
 language: c
-dist: trusty
 compiler:
     #- clang
     - gcc
-    - icc
 env:
     global:
         - TRAVIS_PAR_MAKE="-j 4"
@@ -109,6 +107,8 @@ before_install:
               exit 0
           fi
       fi
+    - sudo sysctl -a
+    - sudo dpkg -l
     ## Build libev
     - cd $TRAVIS_SRC
     - wget http://dist.schmorp.de/libev/Attic/libev-4.22.tar.gz
