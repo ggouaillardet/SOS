@@ -1,11 +1,9 @@
 sudo: required
 dist: trusty
 language: c
-dist: trusty
 compiler:
     #- clang
     - gcc
-    - icc
 env:
     global:
         - TRAVIS_PAR_MAKE="-j 4"
@@ -22,52 +20,6 @@ env:
         - secure: "luxfwDy26Pva+A58T/vPP7+Zek4rBEbpB2TpdXuLdIu/MJ2laoUkaZj/ouT6YgdSxUoiyLUlGIzLnByxnrVgWqYELsWHiV9hzsXZCNfgQDdUHV8UITCqSYVcd5WGNoVdC0QohKuIj47y6bP5ttcv1sIfpV74ztPJZE1dbb2QzgvWcIKWN8Abj55364ZnIidW7ErYLrAiKlBzSxZXCKiKD6qOUbpOBN8yuzaX9diXYJViest7iBC+BfwzXO8Shuouh6QrQhJ1T4oG6u6YJn17fnOwXKJCdkeQYr/E8ka4JRf8vZm7CNO1YdwNhtGtFNEzTJaP2XFLAQGCB9vffCxcqRbpWv+lpsFRsH+eiF/zp/xKGr5qzB9sPUxNANJyhphXK0VfIqDan7nz9di99NFBEF94Jl33E+KODTCAeHb6+a7yboR5B4BalM4jXKrcn/2A4pYrk45YF5IdLLOEvzTaOyVSgHoNIzXRZvHEL2AeYuvz5qLukzMB+QClbA1EeCBNyokuXK/TemeTvveXpQpCaVKNQ8zp/v30u8eiaV8R/dFa2evlJ6kwSaeXlXpXifeXd5Px0x6HF4FT9HLOtPVQ3rZXyfL2Eh92egu15GiTqMNkdVlVGUC20+iddLjtbPqRnVw0WnZkekh62A6rGuT4cTfAbZ2GVPD+IMqzokO1IGg="
     matrix:
         - SOS_BUILD_OPTS="--enable-pmi-simple"
-        - SOS_BUILD_OPTS="--enable-ofi-mr=basic --enable-av-map --disable-cxx --enable-memcpy --enable-pmi-simple"
-
-        - >
-          SOS_DISABLE_FORTRAN=1
-          SOS_BUILD_OPTS="--enable-pmi-mpi CC=mpicc"
-        - >
-          SOS_DISABLE_FORTRAN=1
-          SOS_BUILD_OPTS="--disable-fortran --enable-error-checking --enable-remote-virtual-addressing --disable-aslr-check --enable-pmi-simple"
-        - >
-          SOS_ENABLE_ERROR_TESTS=1 SHMEM_SYMMETRIC_HEAP_USE_MALLOC=1
-          SOS_BUILD_OPTS="--disable-threads --enable-error-checking --enable-pmi-simple"
-        - >
-          SOS_BUILD_OPTS="--with-cma --enable-error-checking --enable-profiling --enable-ofi-mr=basic --enable-av-map --enable-remote-virtual-addressing --enable-pmi-simple"
-        - >
-          SOS_ENABLE_ERROR_TESTS=1
-          SHMEM_SYMMETRIC_HEAP_USE_HUGE_PAGES=1 SHMEM_BOUNCE_SIZE=0
-          SOS_BUILD_OPTS="--enable-error-checking --enable-remote-virtual-addressing --enable-pmi-simple --enable-ofi-fence"
-        - >
-          SOS_ENABLE_ERROR_TESTS=1
-          SHMEM_BARRIER_ALGORITHM=auto SHMEM_BCAST_ALGORITHM=auto SHMEM_REDUCE_ALGORITHM=auto SHMEM_COLLECT_ALGORITHM=auto SHMEM_FCOLLECT_ALGORITHM=auto
-          SOS_BUILD_OPTS="--enable-error-checking --enable-remote-virtual-addressing --enable-thread-completion --enable-pmi-simple"
-        - >
-          SOS_ENABLE_ERROR_TESTS=1
-          SHMEM_BARRIER_ALGORITHM=linear SHMEM_BCAST_ALGORITHM=linear SHMEM_REDUCE_ALGORITHM=linear SHMEM_COLLECT_ALGORITHM=linear SHMEM_FCOLLECT_ALGORITHM=linear
-          SOS_BUILD_OPTS="--enable-error-checking --enable-remote-virtual-addressing --enable-pmi-simple"
-        - >
-          SOS_ENABLE_ERROR_TESTS=1
-          SHMEM_BARRIER_ALGORITHM=tree SHMEM_BCAST_ALGORITHM=tree SHMEM_REDUCE_ALGORITHM=tree
-          SOS_BUILD_OPTS="--enable-error-checking --enable-remote-virtual-addressing --enable-pmi-simple"
-        - >
-          SOS_ENABLE_ERROR_TESTS=1
-          SHMEM_BARRIER_ALGORITHM=dissem SHMEM_REDUCE_ALGORITHM=recdbl SHMEM_FCOLLECT_ALGORITHM=recdbl
-          SOS_BUILD_OPTS="--enable-error-checking --enable-remote-virtual-addressing --enable-pmi-simple"
-        - >
-          SOS_ENABLE_ERROR_TESTS=1
-          SHMEM_FCOLLECT_ALGORITHM=ring
-          SOS_BUILD_OPTS="--enable-error-checking --enable-remote-virtual-addressing --enable-pmi-simple"
-          SHMEM_OFI_TX_POLL_LIMIT=1 SHMEM_OFI_RX_POLL_LIMIT=1
-          SHMEM_OFI_STX_THRESHOLD=1024
-        - >
-          SOS_ENABLE_ERROR_TESTS=1
-          SOS_BUILD_OPTS="--enable-error-checking --enable-remote-virtual-addressing --enable-pmi-simple"
-          SHMEM_OFI_STX_MAX=8 SHMEM_OFI_STX_ALLOCATOR=random
-        - >
-          SOS_BUILD_OPTS="--enable-pmi-simple"
-          SOS_CHECK_TARBALL_RPM=1
 os:
     - linux
 
@@ -79,6 +31,8 @@ addons:
             - mpich
             - libmpich-dev
             - cargo
+            - libevent-dev
+            - libhwloc-dev
 before_install:
     ## Set up the environment
     - mkdir $HOME/travis
@@ -107,6 +61,8 @@ before_install:
               exit 0
           fi
       fi
+    - sudo sysctl -a
+    - sudo dpkg -l
     ## Build libev
     - cd $TRAVIS_SRC
     - wget http://dist.schmorp.de/libev/Attic/libev-4.22.tar.gz
@@ -155,34 +111,19 @@ before_install:
     - cd $TRAVIS_SRC
     - git clone --depth 10 https://github.com/ParRes/Kernels.git PRK
     - echo -e "SHMEMCC=oshcc -std=c99\nSHMEMTOP=$$TRAVIS_INSTALL\n" > PRK/common/make.defs
-    ## Build Libevent
-    - cd $TRAVIS_SRC
-    - wget https://github.com/libevent/libevent/releases/download/release-2.1.8-stable/libevent-2.1.8-stable.tar.gz
-    - tar -xzvf libevent-2.1.8-stable.tar.gz
-    - cd libevent-2.1.8-stable
-    - ./autogen.sh
-    - ./configure --prefix=$TRAVIS_INSTALL/libevent
-    - make install
-    ## Build hwloc
-    - cd $TRAVIS_SRC
-    - wget https://download.open-mpi.org/release/hwloc/v2.0/hwloc-2.0.3.tar.gz
-    - tar xvzf hwloc-2.0.3.tar.gz
-    - cd hwloc-2.0.3
-    - ./configure --prefix=$TRAVIS_INSTALL/hwloc
-    - make install
     ## Build PMIx
     - cd $TRAVIS_SRC
     - git clone --depth 10 https://github.com/pmix/pmix pmix
     - cd pmix
     - ./autogen.pl
-    - ./configure --prefix=$TRAVIS_INSTALL/pmix --with-libevent=$TRAVIS_INSTALL/libevent --with-platform=optimized
+    - ./configure --prefix=$TRAVIS_INSTALL/pmix --with-platform=optimized
     - make install
     ## Build PRRTE
     - cd $TRAVIS_SRC
     - git clone --depth 10 https://github.com/pmix/prrte prrte
     - cd prrte
     - ./autogen.pl
-    - ./configure --prefix=$TRAVIS_INSTALL/prrte --with-pmix=$TRAVIS_INSTALL/pmix --with-libevent=$TRAVIS_INSTALL/libevent --with-hwloc=$TRAVIS_INSTALL/hwloc --without-slurm
+    - ./configure --prefix=$TRAVIS_INSTALL/prrte --with-pmix=$TRAVIS_INSTALL/pmix --without-slurm
     - make install
 
 install:
@@ -252,7 +193,7 @@ script:
     - make $TRAVIS_PAR_MAKE check TESTS=
     - prte &
     - make VERBOSE=1 TEST_RUNNER="prun -host localhost -oversubscribe -np 2" check
-    - killall prte
+    - prun -terminate
     - make install
     ###
     ### Run the UH test suite (Portals)
